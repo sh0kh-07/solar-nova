@@ -8,6 +8,7 @@ import { AudioPlayerModal } from '../components/AudioPlayerModal';
 // Pages
 import { Dashboard } from '../pages/Dashboard';
 import { Sotuvlar } from '../pages/Sotuvlar';
+import { HisobFakturalar } from '../pages/HisobFakturalar';
 import { Mijozlar } from '../pages/Mijozlar';
 import { Qongiroqlar } from '../pages/Qongiroqlar';
 import { Ombor } from '../pages/Ombor';
@@ -27,6 +28,8 @@ export const MainLayout: React.FC = () => {
         return <Dashboard />;
       case 'sotuvlar':
         return <Sotuvlar />;
+      case 'hisob_faktura':
+        return <HisobFakturalar />;
       case 'mijozlar':
         return <Mijozlar />;
       case 'qongiroqlar':

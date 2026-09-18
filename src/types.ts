@@ -1,6 +1,7 @@
 export type PageId =
   | 'dashboard'
   | 'sotuvlar'
+  | 'hisob_faktura'
   | 'mijozlar'
   | 'qongiroqlar'
   | 'ombor'
@@ -10,6 +11,8 @@ export type PageId =
   | 'chiqindilar'
   | 'hisobotlar'
   | 'sozlamalar';
+
+export type PaymentType = 'Naqd' | 'Perechisleniya';
 
 export type SaleStatus =
   | 'Yangi'
@@ -36,6 +39,7 @@ export interface SaleOrder {
   totalAmount: number;
   status: SaleStatus;
   paymentStatus: PaymentStatus;
+  paymentType?: PaymentType;
   date: string;
   deliveryDate?: string;
   notes?: string;
@@ -246,5 +250,48 @@ export interface WasteRecord {
   date: string;
   status: WasteStatus;
   notes?: string;
+}
+
+// ==========================================
+// HISOB-FAKTURALARNI KELISHISH REYESTRI
+// (Sotuvchilar + Buxgalteriya kelishuv reyestri)
+// ==========================================
+export type InvoiceStatus =
+  | 'Yozilmagan'
+  | 'Jarayonda'
+  | 'Aniqlashtirish kerak'
+  | 'Yozildi'
+  | 'Mijozga yuborildi';
+
+export interface InvoiceRegistryItem {
+  id: string;
+  // SOTUVCHI TO'LDIRADI (Ko'k zona / Blue):
+  dealNumber: string;         // Bitim / Shartnoma raqami (masalan: SN-2026-084)
+  dealDate: string;           // Bitim sanasi
+  sellerName: string;         // Sotuvchi / Mas'ul menejer
+  clientId?: string;          // Mijoz ID
+  clientName: string;         // Mijoz korxona nomi
+  clientInn: string;          // Mijoz INN raqami
+  productName: string;        // Tovar nomi (Opora turlari: Opora 8m, Opora 10m konus, ...)
+  quantity: number;           // Miqdori
+  unit: string;               // O'lchov birligi (dona, to'plam)
+  dealAmount: number;         // Bitim summasi (so'm)
+  paymentType: PaymentType;   // To'lov turi: 'Naqd' | 'Perechisleniya'
+  supplierGoods: string;      // Ta'minotchidan kelgan tovar
+  warehouseDeduction: string; // Ombordan hisobdan chiqariladigan tovar
+  warehouseDeducted: boolean; // Ombordan hisobdan chiqarildimi?
+
+  // BUXGALTER TO'LDIRADI (To'q sariq zona / Orange):
+  invoiceNumber: string;      // Hisob-faktura raqami (masalan: HF-01429)
+  invoiceDate: string;        // HF yozilgan sana
+  invoiceAmount: number;      // Yozilgan hisob-faktura summasi (so'm)
+  vatIncluded: boolean;       // QQS bilanmi (12%)
+  vatRate: number;            // QQS stavkasi foizda (masalan 12)
+  status: InvoiceStatus;      // 'Yozilmagan' | 'Jarayonda' | 'Aniqlashtirish kerak' | 'Yozildi' | 'Mijozga yuborildi'
+  accountantNotes?: string;   // Buxgalter xabari / izohi
+
+  // AVTOMATIK FORMULA BO'YICHA:
+  // Farq: dealAmount - invoiceAmount (0 bo'lmasa qizil ogohlantirish)
+  // QQS summasi: invoiceAmount * vatRate / (100 + vatRate) yoki dealAmount * (vatRate / 100)
 }
 

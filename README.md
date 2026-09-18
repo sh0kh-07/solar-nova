@@ -18,5 +18,3 @@ View your app in AI Studio: https://ai.studio/apps/adf014c2-7746-4de6-9ccf-99574
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
-# solar-nova
-# solar-nova

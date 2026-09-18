@@ -113,19 +113,25 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Card 3: Ombordagi mahsulot */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+        <div
+          onClick={() => setActivePage('ombor')}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all cursor-pointer hover:border-blue-300 group"
+        >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
               Ombordagi mahsulot
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center group-hover:scale-105 transition-transform">
               <PackageCheck className="w-5 h-5" />
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 tracking-tight">
             {finishedProductsStockCount} <span className="text-sm font-semibold text-slate-500">dona</span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Tayyor ustunlar zaxirasi</p>
+          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1 group-hover:text-blue-600">
+            <span>Tayyor ustunlar zaxirasi</span>
+            <ArrowRight className="w-3.5 h-3.5 inline ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </p>
         </div>
 
         {/* Card 4: Ishlab chiqarish */}

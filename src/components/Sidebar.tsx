@@ -13,7 +13,8 @@ import {
   Settings,
   X,
   UserCheck,
-  ChevronRight
+  ChevronRight,
+  FileSpreadsheet
 } from 'lucide-react';
 import { PageId } from '../types';
 import { useApp } from '../context/AppContext';
@@ -33,12 +34,19 @@ export const Sidebar: React.FC = () => {
     sidebarOpen,
     setSidebarOpen,
     openOrdersCount,
-    activeProductionOrdersCount
+    activeProductionOrdersCount,
+    unalignedInvoicesCount
   } = useApp();
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Bosh sahifa', icon: LayoutDashboard },
     { id: 'sotuvlar', label: 'Sotuvlar', icon: ShoppingCart, badge: openOrdersCount },
+    {
+      id: 'hisob_faktura',
+      label: 'Hisob-fakturalar',
+      icon: FileSpreadsheet,
+      badge: unalignedInvoicesCount > 0 ? `${unalignedInvoicesCount}!` : undefined
+    },
     { id: 'mijozlar', label: 'Mijozlar', icon: Users },
     { id: 'qongiroqlar', label: 'Qo‘ng‘iroqlar', icon: PhoneCall },
     { id: 'ombor', label: 'Ombor', icon: Warehouse },

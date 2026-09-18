@@ -19,7 +19,10 @@ import {
   CallRecord,
   ScrapRecord,
   WasteRecord,
-  WasteStatus
+  WasteStatus,
+  InvoiceStatus,
+  InvoiceRegistryItem,
+  PaymentType
 } from '../types';
 import {
   INITIAL_SALES,
@@ -31,7 +34,8 @@ import {
   INITIAL_MACHINES,
   INITIAL_TRANSACTIONS,
   INITIAL_CALLS,
-  INITIAL_SCRAP_RECORDS
+  INITIAL_SCRAP_RECORDS,
+  INITIAL_INVOICE_REGISTRY
 } from '../data/initialData';
 
 interface AppContextType {
@@ -61,6 +65,7 @@ interface AppContextType {
   transactions: FinanceTransaction[];
   calls: CallRecord[];
   scraps: ScrapRecord[];
+  invoices: InvoiceRegistryItem[];
 
   // Mutations
   addSale: (sale: {
@@ -135,6 +140,13 @@ interface AppContextType {
   }) => void;
   resetAllData: () => void;
   resetToDefaultData: () => void;
+
+  // Hisob-fakturalarni kelishish reyestri
+  addInvoiceItem: (item: Omit<InvoiceRegistryItem, 'id'>) => void;
+  updateInvoiceAccountantData: (id: string, updates: Partial<InvoiceRegistryItem>) => void;
+  updateInvoiceStatus: (id: string, status: InvoiceStatus) => void;
+  deductInvoiceFromWarehouse: (id: string) => void;
+  unalignedInvoicesCount: number;
 
   // Additional aliases
   finances: FinanceRecord[];
@@ -222,11 +234,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [calls, setCalls] = useState<CallRecord[]>(() => loadFromStorage('calls', INITIAL_CALLS));
   const [scraps, setScraps] = useState<ScrapRecord[]>(() => loadFromStorage('scraps', INITIAL_SCRAP_RECORDS));
+  const [invoices, setInvoices] = useState<InvoiceRegistryItem[]>(() =>
+    loadFromStorage('invoices', INITIAL_INVOICE_REGISTRY)
+  );
 
   // Sync to localStorage
   useEffect(() => {
     saveToStorage('sales', sales);
   }, [sales]);
+  useEffect(() => {
+    saveToStorage('invoices', invoices);
+  }, [invoices]);
   useEffect(() => {
     saveToStorage('clients', clients);
   }, [clients]);
@@ -619,6 +637,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'transactions');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'calls');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'scraps');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'invoices');
 
     setSales(INITIAL_SALES);
     setClients(INITIAL_CLIENTS);
@@ -630,7 +649,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTransactions(INITIAL_TRANSACTIONS);
     setCalls(INITIAL_CALLS);
     setScraps(INITIAL_SCRAP_RECORDS);
+    setInvoices(INITIAL_INVOICE_REGISTRY);
   };
+
+  // Invoice registry mutations
+  const addInvoiceItem = (item: Omit<InvoiceRegistryItem, 'id'>) => {
+    const newItem: InvoiceRegistryItem = {
+      ...item,
+      id: `inv-${Date.now()}`
+    };
+    setInvoices(prev => [newItem, ...prev]);
+  };
+
+  const updateInvoiceAccountantData = (id: string, updates: Partial<InvoiceRegistryItem>) => {
+    setInvoices(prev =>
+      prev.map(inv => (inv.id === id ? { ...inv, ...updates } : inv))
+    );
+  };
+
+  const updateInvoiceStatus = (id: string, status: InvoiceStatus) => {
+    setInvoices(prev =>
+      prev.map(inv => (inv.id === id ? { ...inv, status } : inv))
+    );
+  };
+
+  const deductInvoiceFromWarehouse = (id: string) => {
+    const inv = invoices.find(i => i.id === id);
+    if (!inv || inv.warehouseDeducted) return;
+
+    // Mark invoice as deducted
+    setInvoices(prev =>
+      prev.map(i => (i.id === id ? { ...i, warehouseDeducted: true } : i))
+    );
+
+    // Automatically record warehouse movement (Chiqim) for Opora
+    const movement: WarehouseMovement = {
+      id: `wm-${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+      type: 'Chiqim',
+      productName: inv.productName,
+      quantity: inv.quantity,
+      unit: inv.unit || 'dona',
+      supplierOrDestination: inv.clientName,
+      reason: `${inv.dealNumber} sonli bitim va ${inv.invoiceNumber || 'HF'} hisob-faktura bo‘yicha sotuvga chiqarildi`,
+      price: Math.round(inv.dealAmount / (inv.quantity || 1)),
+      totalValue: inv.dealAmount,
+      notes: `Ombordan hisobdan chiqarildi: ${inv.warehouseDeduction}`
+    };
+
+    setWarehouseMovements(prev => [movement, ...prev]);
+
+    // Also deduct finished product stock
+    setFinishedProducts(prev =>
+      prev.map(fp => {
+        const match =
+          inv.productName.toLowerCase().includes(fp.name.toLowerCase()) ||
+          fp.name.toLowerCase().includes(inv.productName.toLowerCase()) ||
+          (inv.productName.toLowerCase().includes('opora') && fp.name.toLowerCase().includes('opora'));
+        if (match) {
+          const newStock = Math.max(0, fp.stock - inv.quantity);
+          return {
+            ...fp,
+            stock: newStock,
+            status: newStock <= 0 ? 'Buyurtmada' : newStock < fp.minStock ? 'Kam qoldiq' : 'Mavjud'
+          };
+        }
+        return fp;
+      })
+    );
+  };
+
+  const unalignedInvoicesCount = useMemo(() => {
+    return invoices.filter(inv => {
+      const diff = inv.dealAmount - inv.invoiceAmount;
+      return inv.status === 'Aniqlashtirish kerak' || (inv.status !== 'Yozilmagan' && diff !== 0) || inv.status === 'Yozilmagan';
+    }).length;
+  }, [invoices]);
 
   // Computed Values
   const todaySalesAmount = useMemo(() => {
@@ -761,6 +855,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         transactions,
         calls,
         scraps,
+        invoices,
 
         addSale,
         updateSaleStatus,
@@ -776,6 +871,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateMachineStatus,
         addCallRecord,
         resetAllData,
+
+        // Hisob-faktura mutations
+        addInvoiceItem,
+        updateInvoiceAccountantData,
+        updateInvoiceStatus,
+        deductInvoiceFromWarehouse,
+        unalignedInvoicesCount,
 
         todaySalesAmount,
         todayIncomeAmount,
