@@ -1,0 +1,6 @@
+{
+  "name": "Solar Nova — CRM & ERP Tizimi",
+  "description": "Solar Nova — quyosh panellari, geliotizimlar va po‘lat konstruksiyalar ishlab chiqarish korxonasi uchun zamonaviy CRM + ERP tizimi",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
